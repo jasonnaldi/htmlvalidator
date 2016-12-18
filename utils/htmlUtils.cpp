@@ -341,55 +341,7 @@ void htmlUtils::validateHtml(const std::string &path, const std::string &pwd, do
     {
         validateLink(link, pwd, path, document);
     }
-    
-    // Ensure footer author is the same as the one on the meta author tag
-    auto footer = htmlUtils::extractFirstElementMatchingPatternFromTree(document.tree, "section", {{"id", "footer"}});
-    auto section = htmlUtils::extractFirstElementMatchingPatternFromTree(footer.children, "div", {{"class", "container"}});
-    auto footerAuthor = htmlUtils::extractFirstElementMatchingPatternFromTree(section.children, "address", {});
-    
-    //Bugfix: someone added &ograve; instead of ò...
-    footerAuthor.content = stringUtils::replaceAllOccurrencies(footerAuthor.content, "&ograve;", "ò");
-    
-    //Some people added their footer name inside a link...
-    auto linkData = htmlUtils::extractFirstElementMatchingPatternFromTree(footerAuthor.children, "a", {});
-    
-    if (footerAuthor.content.compare("") == 0)
-    {
-        problem_t problem;
-        
-        problem.type = "error";
-        problem.message = "missing footer author";
-        problem.extract =
-        "\n\t\t<section id=\"footer\">\n"
-        "\t\t\t<div class=\"container\">\n"
-        "\t\t\t\t<h4>Author</h4>\n"
-        "\t\t\t\t<address>Your Name</address>\n"
-        "\t\t\t</div>\n"
-        "\t\t</section>";
-        
-        // -1 because it is hard to estimate where the user wants to add it...
-        problem.firstLine = -1;
-        problem.firstColumn = -1;
-        problem.lastLine = -1;
-        problem.lastColumn = -1;
-        
-        document.problems.push_back(problem);
-    }
-    else if (footerAuthor.content.compare(document.author) != 0 && linkData.content.compare(document.author) != 0)
-    {
-        problem_t problem;
-        
-        problem.type = "error";
-        problem.message = "mismatch between author specified in meta and footer";
-        problem.extract = "\"" + document.author + "\" vs. \"" + (linkData.content.compare("") != 0 ? linkData.content : footerAuthor.content) + "\"";
-        problem.firstLine = stringUtils::firstLineOccurrence(document.plaintext, footerAuthor.stringRepresentation);
-        problem.firstColumn = problem.firstLine;
-        problem.lastLine = problem.firstLine;
-        problem.lastColumn = problem.firstLine;
-        
-        document.problems.push_back(problem);
-    }
-    
+
     std::string response = curlUtils::validateHTML(path);
     
     if (response.length() == 0)
